@@ -2,6 +2,7 @@
 
 **A system for transforming code into beautiful, architecturally transparent implementations while preserving every existing behavior.**
 
+**Author**: William N. King
 Version: 1.0
 Date: 2026-10-01
 Source: ≡TACK Kernel Artistic Rewrite & Validation Phase
@@ -451,3 +452,6 @@ The goal is a codebase where **architecture is visible, defects are labeled, and
 
 **Status**: Validated through ≡TACK Kernel artistic rewrite and validation phase (2026-10-01).
 **Ready for**: Application to production codebases, defect-fixing phase, and cross-organization adoption.
+
+**Author**: William N. King
+**Governance**: This specification governs all future beautification and code correction work. All modifications must be immediately reflected in this document.
