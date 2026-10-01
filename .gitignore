@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+# Cached dataset (a minimized derivative of ProPublica's file). Never committed.
+compas/data/*
+!compas/data/.gitignore

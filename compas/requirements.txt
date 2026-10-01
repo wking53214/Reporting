@@ -1,0 +1,12 @@
+# The pipeline the example runs, pinned to the commits it was tested against
+# (the code in these repos is unchanged since; later commits there are README-only).
+#
+# Install with --no-deps. delta and beta each declare zeta/beta as unpinned git
+# dependencies, which pip cannot reconcile with the pins below; the three
+# packages need nothing else, so nothing is lost:
+#
+#   pip install --no-deps -r compas/requirements.txt
+#   pip install pytest        # only to run the tests
+delta @ git+https://github.com/wking53214/interconnected_delta@5745b35cc85b42bd1720f0ab74f63c17b551d87f
+zeta @ git+https://github.com/wking53214/interconnected_zeta@6d6210338413dbbdc48637a5c5d6dba7255d332c
+beta @ git+https://github.com/wking53214/interconnected_beta@3bb9c6f8261ea87bb508501f550e755619f2d3bf
