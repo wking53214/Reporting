@@ -388,7 +388,146 @@ Each priority is fixed in a separate phase, with tests validating the fix before
 
 ---
 
-## VI. Tools and Automation
+## VI. Defect-Fixing Process (Per-Layer)
+
+The defect-fixing phase mirrors the validation phase: complete one layer in totality, validate it exhaustively, red team it, then move to the next layer.
+
+### A. Layer Fixing Workflow
+
+For each layer (1 through 6):
+
+1. **Identify all CRITICAL/HIGH/MEDIUM defects in the layer** (from Elegant.md documentation)
+   - Example: Layer 1 has "silent zero on unknown architecture"
+   - List all defects before starting fixes
+
+2. **Fix all defects in the layer** (in priority order)
+   - One commit per defect fix
+   - Follow commit template below
+   - Do NOT move to the next layer until this one is complete
+
+3. **Run full test suite**
+   - All tests from validation phase must pass
+   - Add new tests if the fix changes external behavior
+   - Test result: 100% pass rate before moving on
+
+4. **Red team the layer** (adversarial validation)
+   - Ask: "How would an attacker exploit this?"
+   - Run mutation testing on the fixed code
+   - Run boundary condition tests
+   - Run concurrency/race condition tests
+   - Red team result: All adversarial tests fail (code passes)
+
+5. **Commit and push the layer**
+   - Commit message includes test results and red team findings
+   - Push to origin/main
+   - Update Elegant.md with any new processes discovered
+
+6. **Move to next layer**
+   - Only after Layer N passes red team
+   - Begin Layer N+1
+
+### B. Example: Layer 1 Fixing (HardwareClock Silent Zero)
+
+**Defects identified** (from validation phase):
+- ReadTicks() returns 0 on unknown architectures (enables escape)
+- No compile-time assertion
+- No runtime error
+
+**Fix approach**:
+```
+Fix 1: Add #error directive for unknown architectures
+  Commit: "Layer 1: HardwareClock: Fail at compile time on unknown arch"
+  Test: Compilation fails on unknown target
+  Red team: Can no longer silently return zero
+
+Fix 2: Add static_assert for supported architectures
+  Commit: "Layer 1: HardwareClock: Static assertion guards unknown platforms"
+  Test: Static assertion triggers at compile time
+  Red team: No fallback path exists at runtime
+
+Fix 3: Document the contract in code
+  Commit: "Layer 1: HardwareClock: Clarify ReadTicks() contract and bounds"
+  Test: All existing tests pass
+  Red team: Boundary tests on tick overflow, zero detection
+```
+
+**Test suite validation**:
+```
+Tests run: N (all validation phase tests + layer-specific tests)
+Pass: N
+Fail: 0
+Mutation tests: [CRITICAL mutations from serum]
+Mutation failures: [all mutations killed]
+```
+
+**Red team findings** (adversarial):
+```
+Attack: Can ReadTicks() return zero legitimately? 
+  Result: NO. ReadTicks() either returns > 0 or compilation fails. ✓
+
+Attack: Can unknown architecture be silently added without failing?
+  Result: NO. #error and static_assert prevent this. ✓
+
+Attack: Can tick counter overflow be exploited?
+  Result: Boundary test shows overflow behavior documented. OK.
+```
+
+**Commit pattern**:
+```
+Step 1: Layer 1 - HardwareClock - Fail on unknown architecture
+
+Add #error directive and static_assert to prevent silent zero
+fallback on unsupported architectures. Layer 1 now fails at
+compile time instead of enabling escape at runtime.
+
+BEAUTIFICATION CHANGES:
+  - Documented ReadTicks() contract in header
+  - Documented that zero is impossible after compilation guard
+
+REWRITING CHANGES:
+  - Added #error for unknown __ARCH__
+  - Added static_assert for known architectures
+  - Removed silent zero fallback path
+
+TESTS AFTER STEP 1:
+  Tests run: 24
+  Pass: 24
+  Fail: 0
+  Mutation tests: 8 CRITICAL patterns (serum)
+  Mutations killed: 8/8
+  Red team: Adversarial test_unknown_arch_compilation PASS
+
+Co-Authored-By: William N. King <wking53214@gmail.com>
+```
+
+### C. Red Team Testing Framework
+
+Every layer gets red team validation before advancing:
+
+```cpp
+// Red team test: Can attacker exploit this layer's defect?
+TEST(Layer1RedTeam, UnknownArchitectureFailsAtCompileTime) {
+    // Attempt to compile with unknown __ARCH__
+    // Expected: Compilation fails with clear error
+    // Result: Cannot be bypassed at runtime
+}
+
+TEST(Layer1RedTeam, ReadTicksNeverReturnsZero) {
+    // Boundary test: Try to make ReadTicks() return 0
+    // Expected: Not possible on supported architectures
+    // Result: Zero detection guards downstream layers
+}
+
+TEST(Layer1RedTeam, SilentFallbackIsEliminated) {
+    // Security test: Does the old silent zero still exist anywhere?
+    // Expected: No fallback paths found
+    // Result: Escape vector closed
+}
+```
+
+---
+
+## VII. Tools and Automation
 
 ### Systematic Rename (e.g., tack_ → stack_)
 
@@ -438,7 +577,7 @@ echo "All six layers validated in integration test."
 
 ---
 
-## VII. Maintenance and Evolution
+## VIII. Maintenance and Evolution
 
 Beautification is not a one-time process. As code evolves:
 
