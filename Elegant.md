@@ -3,9 +3,9 @@
 **A system for transforming code into beautiful, architecturally transparent implementations while preserving every existing behavior.**
 
 **Author**: William N. King  
-**Version**: 1.1  
-**Date**: 2026-10-02  
-**Source**: ≡TACK Kernel Artistic Rewrite & Validation Phase; refined after application to `wking53214/experimental`
+**Version**: 1.2  
+**Date**: 2026-10-07  
+**Source**: ≡TACK Kernel Artistic Rewrite & Validation Phase; refined after application to `wking53214/experimental`, `wking53214/ghost_tools` and `wking53214/Elegant`
 
 ---
 
@@ -63,6 +63,23 @@ Every defect gets a stable ID in a single source of truth (e.g. `ELEGANT_AUDIT.m
 - Every fix commit **must cite** the ID(s): `Fix H2: introduce OPERATOR_APPROVED`.
 - Audit status: Open → Fixed (commit SHA).
 
+### Rule 10: Re-Anchor Mutation Sites, Never Weaken Them
+
+When a split or rename moves code that a mutation suite targets by exact text:
+
+1. Re-point each moved site to its new text with the **same** mutation. Never delete a mutant to make a move pass.
+2. A moved line must still match **exactly once**. If its new indentation makes it a substring of another site, make it unique (an inline comment is enough) rather than loosening the anchor.
+3. Run every mutant suite that touches the changed file, not only the obvious one. Every mutant must still be killed.
+4. Split along seams the code already has: a collection loop, one builder per kind of output, a verification step. Keep check order identical.
+
+### Rule 11: Documentation Moves With Behavior
+
+A commit that changes what a repository does changes what its README says, **in the same pull request**.
+
+1. Before merge, run the repository's own self-check on itself (`elegant critic .`, `ghost-buster .`, `verify_manifest.py`) and record the result.
+2. State counts in a form the self-check verifies ("24 tests exist"), not in prose it cannot read ("15 passed").
+3. A live run that proves something gets a row in the repository's registry or audit file; the README points to it rather than asserting it.
+
 ---
 
 ## III. Defect Priority System
@@ -116,6 +133,18 @@ Silent zero on Layer 1 = canonical CRITICAL defect.
 Spine: authority → proposal → governor apply → detection.
 Defects at process adoption: H1 (swallowed exceptions), H2 (operator AUTO_APPROVED), M1/M3.
 
+### Function splits (`ghost_tools`, 2026-10-07)
+The self-scan rated two of ghost_tools' own functions MAJOR `long_function`.
+`detect_unreachable_declared_state` 253 → 106 lines (member collection plus one builder per finding kind);
+`_remedy_doc_counts` 184 → 137 lines (decisions made from the run alone; read-back verification).
+Behavior unchanged, 12 mutation sites re-anchored (Rule 10), self-scan 0 MAJOR, CI green on 3.11 and 3.12.
+
+### Documentation drift (`Elegant`, 2026-10-07)
+Three behavior changes merged with no README change. `elegant critic .` on Elegant itself:
+"This isn't good enough yet" (README said 15 tests; the tree had 24). Fixed by Rule 11:
+README corrected, count restated so the critic checks it, the live loop run recorded in
+`docs/REGISTRY.json`. Critic after: exit 0. The canonical case for Rule 11.
+
 ---
 
 ## VII. Version History
@@ -124,5 +153,6 @@ Defects at process adoption: H1 (swallowed exceptions), H2 (operator AUTO_APPROV
 |-----|------|--------|
 | 1.0 | 2026-10-01 | Initial principles, rules 1–6, ≡TACK exemplar |
 | 1.1 | 2026-10-02 | Rules 7–9; audit SSOT; fix commit template; governance exemplar |
+| 1.2 | 2026-10-07 | Rule 10 (re-anchor mutation sites), Rule 11 (documentation moves with behavior); ghost_tools split and Elegant drift exemplars |
 
 **Author**: William N. King
