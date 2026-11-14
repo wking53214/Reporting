@@ -6,7 +6,8 @@ It points to the evidence; it does not repeat it. Where a claim needs a number, 
 ## What was asked, and the rule that came out of it
 
 The owner has API keys for Groq, Google Gemini and Cloudflare Workers AI and asked which of their repositories could be
-advanced by using them. All 50 repositories in reach were read (READMEs and a search for model calls).
+advanced by using them. About 50 repositories were surveyed: the opening of each README and a search for model calls, with about twenty
+read further.
 
 The answer that mattered came after the first reply: **no AI goes into the stack, except the Watcher.** The keys are for
 testing and for the one repository whose job is to write a plain-words account of a run. So the work split in two.
@@ -70,7 +71,7 @@ These were on the first survey and were not built. They are listed so they are n
 |---|---|---|
 | WATCHER_MCU PR 15 (docs) | owner | Documentation only; no code or test changed |
 | Delete the CNS working branch | owner | Net change zero; its history is the record of the reverted adapters |
-| Read the three hidden vanguard changes | any | Send one saved gpt-oss answer with 15 changes to `model_probe --rescore` with a higher listing cap |
+| Read the three hidden vanguard changes | any | Raise `limit` in `scoring.changes` (no flag for it yet) and rescore a saved gpt-oss answer that had 15 changes |
 | Run Gemini's larger flash models again | owner | Needs Google capacity; same two commands as the smaller model |
 | Decide on code enforcement in the Watcher | owner | The README's KNOWN DEFECTS records why it matters |
 
@@ -80,4 +81,5 @@ These were on the first survey and were not built. They are listed so they are n
   means; a run needs one provider key in the environment.
 - `watcher_providers/README.md`: the fixture is `tests/fixtures/warden_0_13_6_declined_record.json` in WATCHER_MCU;
   `watcher narrate FIXTURE --provider P --model M`, then compare with `--no-model`.
-- Keys were typed at the owner's own prompt. None was written to a repository or shown in a log.
+- Keys are read from the environment and never written by the harness or the narrators; their errors carry a status
+  and not the text of the error.
