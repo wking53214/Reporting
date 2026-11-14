@@ -51,6 +51,44 @@ are themselves rewrites (ASSAY documents a rename and made thresholds configurab
 layout only is expected to score higher on precision than they do. Returning the file unchanged keeps every word and
 fails only `parses`, which is why `parses` is the first thing to read.
 
+## Results, 2026-11-14
+
+Run by the owner on their own machine and keys, with the scorer and prompts as committed at `501bb4a`. Counts are
+runs that returned an answer; an error row (HTTP 413, 429) is left out of the count, not scored as a miss. Two earlier
+Groq gpt-oss-120b runs under the old `cannot_fail` wording and the first scorer are not counted.
+
+| Model (host) | cannot_fail, all 4 right | status_claims, all 7 right | vanguard changed layout only | vanguard changes per run | sre changed layout only |
+|---|---|---|---|---|---|
+| gpt-oss-120b (Groq) | 5 of 5 | 5 of 5 | 0 of 3 | 1, 5, 15 | 3 of 3 |
+| gpt-oss-120b (Cloudflare) | 3 of 3 | 3 of 3 | 0 of 3 | 15, 1, 15 | 3 of 3 |
+| qwen3.8-27b (Groq) | 2 of 2 | 3 of 3 | 0 of 3 | 1, 1, 1 | 2 of 2 |
+| llama-3.3-70b-instruct-fp8-fast (Cloudflare) | **0 of 3** | 3 of 3 | 0 of 3 | 1, 3, 3 | 2 of 2 seen |
+
+Errors left out: Groq gpt-oss had four HTTP 413 refusals before the retry was added; Qwen had two HTTP 429 refusals.
+The last Llama run's sre result was cut off in the copy sent back and is not in the table.
+
+What the rows show:
+
+- **Every model passed `status_claims`, in every run.** Seven unbacked labels were seen as unbacked each time.
+- **Llama missed the same test every time.** In all three runs it scored 3 of 4 and called `test_gateway_is_called` CAN_FAIL.
+  That test asserts only on a mock it has just called itself, so ASSAY's answer (CANNOT_FAIL) holds. This is a repeated
+  error, not noise. The other three models never made it.
+- **No model returned vanguard unchanged in layout.** All of them repaired `from __future import annotations`, which
+  is damaged in the source and which ASSAY's own reconstruction also repairs. Beyond that they split:
+  Qwen added nothing else in three runs. Llama sometimes put quotes around one type name (3 changes).
+  gpt-oss either stopped at the repair (1 change) or reformatted fully, adding parentheses, trailing commas and
+  quotes (15 changes), and did so on both hosts.
+- **The 15-change list was the same on both hosts.** The first twelve changes listed were identical in three separate
+  gpt-oss runs, one on Groq and two on Cloudflare. The three beyond the listing cap were not read. This points at the
+  model, not the host, with three runs as the evidence.
+- **sre came back with layout changed only in every run that returned it**, apart from one early Groq run that
+  reworded a sentence ("calculates" to "calculate"; that run is among the uncounted early ones).
+- **The word scores read 1.00 throughout**, including runs with 15 changed characters. `layout_only` is what showed them.
+
+What it does not show: that any change altered what the code does (none listed alters a value or operator, but the
+hidden three were not read), that sre is easier than vanguard (vanguard's damaged import may be the cause), or anything
+about models and files other than these. Three runs per model is a small sample.
+
 ## Limits
 
 - `layout_only` measures obedience to "change nothing", not quality. The flattened vanguard source contains
