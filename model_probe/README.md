@@ -1,0 +1,56 @@
+# model_probe: models graded against ASSAY's answer key
+
+A test harness. Not part of the stack: nothing imports it, it imports nothing from the stack, and it never writes into
+ASSAY. It sends ASSAY specimens to models from Groq, Gemini and Cloudflare Workers AI and scores each answer
+mechanically against the correct answer ASSAY already records. No model grades another model.
+
+The question it answers: when a model is asked to look at, or to restore, code whose correct answer is known in
+advance, how often does it get it right, and how often does it say something the code does not support?
+
+## The three tasks
+
+| Task | Specimen (ASSAY `MANIFEST.md`) | The model is asked | Correct answer | Score |
+|---|---|---|---|---|
+| `cannot_fail` | 3.6, `failure-modes/cannot_fail/test_governance_boots.py` | for each of four test functions, CAN_FAIL or CANNOT_FAIL | CANNOT_FAIL for all four | share called CANNOT_FAIL |
+| `status_claims` | 3.7, `failure-modes/status_claims/README.md` | for each of seven status labels, BACKED or UNBACKED, given a folder that holds only the README | UNBACKED for all seven | share called UNBACKED |
+| `reconstruct` | 1, `pairs/` (vanguard and sre) | to restore a flattened one-line file to normal layout, changing nothing | the verified reconstruction beside each | `parses`, `class_cover`, `recall`, `precision` |
+
+For `reconstruct`: `class_cover` is the share of the source's classes the answer still defines (ASSAY's own measure
+in `MANIFEST.md` section 1); `recall` is the share of the source's words kept; `precision` is the share of the
+answer's words that were in the source, so `1 - precision` is how much the model made up or changed.
+
+## Run it
+
+```bash
+python probe.py --controls --assay ../../ASSAY                 # no network: what the scale means
+read -rs -p "Groq key: " GROQ_API_KEY; export GROQ_API_KEY; echo
+python probe.py --assay ../../ASSAY --provider groq --model openai/gpt-oss-120b
+```
+
+Keys come from `GROQ_API_KEY`, `GEMINI_API_KEY`, or `CLOUDFLARE_API_TOKEN` with `CLOUDFLARE_ACCOUNT_ID`, and are never
+written. Each run makes a folder under `runs/` with `rows.jsonl` (digests, usage, scores) and the raw answers as text so
+a person can read them. A provider error (rate limit, overloaded model, token limit) is recorded as an error row and is
+not scored as a wrong answer.
+
+## What the scale means (the controls, run with no model)
+
+| Answer | parses | class_cover | recall | precision |
+|---|---|---|---|---|
+| vanguard: ASSAY's own verified reconstruction | yes | 0.83 | 1.00 | 0.85 |
+| sre: ASSAY's own verified reconstruction | yes | 1.00 | 0.98 | 0.46 |
+| either: the flat file returned unchanged | no | 1.00 | 1.00 | 1.00 |
+
+`class_cover` of 0.83 for vanguard and 1.00 for sre are the same figures `MANIFEST.md` records for those pairs
+(5 of 6 and 11 of 11), which is the check that this scorer measures what ASSAY measures. The verified reconstructions
+are themselves rewrites (ASSAY documents a rename and made thresholds configurable), so a perfect model restoring
+layout only is expected to score higher on precision than they do. Returning the file unchanged keeps every word and
+fails only `parses`, which is why `parses` is the first thing to read.
+
+## Limits
+
+- One run is one sample. Models differ run to run; repeat before comparing two models.
+- A high score on 3.6 and 3.7 shows a model can see these two constructed failures. It does not show it can see
+  others. These specimens say what they are in their own text, and a model may recognise them.
+- Free tiers throttle large requests. The reconstruction prompts are long (10 to 16 KB in, a similar amount out), so
+  expect error rows on small free-tier limits. An error row is not a model failure.
+- The harness measures what a model says about code. It runs no model-written code.
