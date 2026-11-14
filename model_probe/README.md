@@ -33,7 +33,8 @@ Keys come from `GROQ_API_KEY`, `GEMINI_API_KEY`, or `CLOUDFLARE_API_TOKEN` with 
 written. Each run makes a folder under `runs/` with `rows.jsonl` (digests, usage, scores) and the raw answers as text so
 a person can read them. `python probe.py --rescore runs/<folder>` scores saved answers again with no model, for when the scorer is improved.
 `--repeat N` runs the whole set N times, each in its own folder, to show the spread between runs.
-A provider error (rate limit, overloaded model, token limit) is recorded as an error row and is
+A request refused as too large (HTTP 413, which Groq's free tier answers when the minute's token total would be
+exceeded) is retried after 65 seconds, and rate limits and overload (429, 5xx) after a shorter wait. A provider error that persists (rate limit, overloaded model, token limit) is recorded as an error row and is
 not scored as a wrong answer.
 
 ## What the scale means (the controls, run with no model)

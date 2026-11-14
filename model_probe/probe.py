@@ -76,8 +76,10 @@ def ask(provider: str, model: str, prompt: str, max_tokens: int, retries: int = 
                 return {"error": "no text in the answer", "finish": choice.get("finish_reason")}
             return {"text": text, "finish": choice.get("finish_reason"), "usage": out.get("usage")}
         except urllib.error.HTTPError as err:
-            if err.code in (429, 500, 502, 503, 504) and attempt < retries:
-                time.sleep(20 * (attempt + 1))
+            if err.code in (413, 429, 500, 502, 503, 504) and attempt < retries:
+                # Groq answers 413 when a request would push the minute's token total over the limit, which clears
+                # when the minute does; 429 and 5xx clear on their own too.
+                time.sleep(65 if err.code == 413 else 20 * (attempt + 1))
                 continue
             return {"error": f"HTTP {err.code}"}
         except (OSError, ValueError, KeyError, IndexError, TypeError):
