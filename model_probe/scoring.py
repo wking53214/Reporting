@@ -66,6 +66,8 @@ def score_reconstruction(source: str, answer: str) -> dict[str, Any]:
 
     parses       the answer is valid Python.
     class_cover  of the class names in the source, the share the answer still defines.
+    layout_only  with all whitespace removed, the answer is character for character the source. This is the strict
+                 test: recall and precision read words only, so a changed number, operator or string passes them.
     recall       of the words in the source, the share still in the answer (multiset overlap).
     precision    of the words in the answer, the share that were in the source. 1 - precision is invention.
     """
@@ -81,7 +83,11 @@ def score_reconstruction(source: str, answer: str) -> dict[str, Any]:
         out_classes = set(re.findall(r"\bclass\s+([A-Za-z_]\w*)", code))
     src, out = Counter(_WORD.findall(source)), Counter(_WORD.findall(code))
     shared = sum((src & out).values())
-    return {"parses": tree is not None, "lines": code.count("\n") + 1,
+    a, b = re.sub(r"\s+", "", source), re.sub(r"\s+", "", code)
+    at = next((i for i, (x, y) in enumerate(zip(a, b)) if x != y), None if len(a) == len(b) else min(len(a), len(b)))
+    return {"layout_only": a == b, "first_difference": None if at is None else
+            {"at": at, "source": a[max(0, at - 20):at + 40], "answer": b[max(0, at - 20):at + 40]},
+            "parses": tree is not None, "lines": code.count("\n") + 1,
             "class_cover": (len(src_classes & out_classes) / len(src_classes)) if src_classes else 1.0,
             "classes_missing": sorted(src_classes - out_classes),
             "recall": shared / max(1, sum(src.values())), "precision": shared / max(1, sum(out.values())),

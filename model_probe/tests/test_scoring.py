@@ -39,3 +39,13 @@ def test_reconstruction_catches_loss_and_invention():
     assert lost["classes_missing"] == ["B"] and lost["class_cover"] == 0.5 and lost["recall"] < 1.0
     made_up = s.score_reconstruction(FLAT, GOOD + "\nclass Extra:\n    def secret(self):\n        return 2\n")
     assert made_up["precision"] < 1.0 and "Extra" in made_up["invented"]
+
+
+def test_layout_only_catches_changes_that_word_scores_cannot_see():
+    flat = "class A: x = 0.5 def f(self): return x > 1"
+    same = "class A:\n    x = 0.5\n    def f(self):\n        return x > 1\n"
+    changed = same.replace("0.5", "0.7").replace(">", "<")
+    assert s.score_reconstruction(flat, same)["layout_only"] is True
+    r = s.score_reconstruction(flat, changed)
+    assert r["recall"] == 1.0 and r["precision"] == 1.0   # the word scores see nothing wrong
+    assert r["layout_only"] is False and "0.7" in r["first_difference"]["answer"]

@@ -29,8 +29,10 @@ PAIRS = {  # flattened source -> the verified reconstruction beside it (MANIFEST
     "sre": ("sre-system-resilience-evaluator-flattened.py", "sre_system_resilience_evaluator_adapter.py"),
 }
 CANNOT_FAIL_PROMPT = (
-    "Below is a Python test module. For each function whose name starts with test_, say whether it CAN_FAIL (some "
-    "change to the code under test would make it fail) or CANNOT_FAIL (it passes whatever the code under test does).\n"
+    "Below is a Python test module. For each function whose name starts with test_, say whether it CAN_FAIL or "
+    "CANNOT_FAIL. A test CAN_FAIL if the code under test could return a wrong result, or behave wrongly without "
+    "crashing, and the test would then fail. A test CANNOT_FAIL if it would still pass when the code under test "
+    "behaves wrongly; a crash in the code does not count, since any test fails on a crash.\n"
     "Reply with only a JSON object mapping each test function name to CAN_FAIL or CANNOT_FAIL.\n\n")
 STATUS_PROMPT = (
     "Below is the whole content of a project folder: one README and nothing else (no source files, no tests, no CI).\n"
@@ -119,6 +121,16 @@ def controls(assay: Path) -> None:
                   f"recall={r['recall']:.2f} precision={r['precision']:.2f}")
 
 
+def rescore(assay: Path, folder: Path) -> int:
+    """Score the answers saved in `folder` again with the current scorer. No model, no network."""
+    for job in jobs(assay, ["cannot_fail", "status_claims", "reconstruct"]):
+        saved = folder / f"{job['task']}-{job['specimen']}.txt"
+        if saved.is_file():
+            result = job["score"](saved.read_text(encoding="utf-8"))
+            print(job["task"], job["specimen"], {k: v for k, v in result.items() if k != "invented"})
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     p.add_argument("--assay", type=Path, default=Path(os.environ.get("ASSAY", "../../ASSAY")))
@@ -127,6 +139,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--task", action="append", choices=["cannot_fail", "status_claims", "reconstruct"])
     p.add_argument("--out", type=Path, default=Path("runs"))
     p.add_argument("--controls", action="store_true")
+    p.add_argument("--rescore", type=Path, help="score the saved answers in a runs/ folder again, with no model")
     args = p.parse_args(argv)
     if not (args.assay / "specimens").is_dir():
         print(f"no ASSAY checkout at {args.assay}; pass --assay PATH or set ASSAY", file=sys.stderr)
@@ -134,6 +147,8 @@ def main(argv: list[str] | None = None) -> int:
     if args.controls:
         controls(args.assay)
         return 0
+    if args.rescore:
+        return rescore(args.assay, args.rescore)
     if not args.provider or not args.model:
         print("pass --provider and --model, or --controls", file=sys.stderr)
         return 2

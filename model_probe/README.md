@@ -13,9 +13,11 @@ advance, how often does it get it right, and how often does it say something the
 |---|---|---|---|---|
 | `cannot_fail` | 3.6, `failure-modes/cannot_fail/test_governance_boots.py` | for each of four test functions, CAN_FAIL or CANNOT_FAIL | CANNOT_FAIL for all four | share called CANNOT_FAIL |
 | `status_claims` | 3.7, `failure-modes/status_claims/README.md` | for each of seven status labels, BACKED or UNBACKED, given a folder that holds only the README | UNBACKED for all seven | share called UNBACKED |
-| `reconstruct` | 1, `pairs/` (vanguard and sre) | to restore a flattened one-line file to normal layout, changing nothing | the verified reconstruction beside each | `parses`, `class_cover`, `recall`, `precision` |
+| `reconstruct` | 1, `pairs/` (vanguard and sre) | to restore a flattened one-line file to normal layout, changing nothing | the source itself, with only layout changed | `layout_only` (strict), `parses`, `class_cover`, `recall`, `precision` |
 
-For `reconstruct`: `class_cover` is the share of the source's classes the answer still defines (ASSAY's own measure
+For `reconstruct`: `layout_only` is true when, with all whitespace removed, the answer is character for character the
+source. It is the strict test. `recall` and `precision` read words only, so a changed number, operator or string
+passes them; `layout_only` does not. `class_cover` is the share of the source's classes the answer still defines (ASSAY's own measure
 in `MANIFEST.md` section 1); `recall` is the share of the source's words kept; `precision` is the share of the
 answer's words that were in the source, so `1 - precision` is how much the model made up or changed.
 
@@ -29,7 +31,8 @@ python probe.py --assay ../../ASSAY --provider groq --model openai/gpt-oss-120b
 
 Keys come from `GROQ_API_KEY`, `GEMINI_API_KEY`, or `CLOUDFLARE_API_TOKEN` with `CLOUDFLARE_ACCOUNT_ID`, and are never
 written. Each run makes a folder under `runs/` with `rows.jsonl` (digests, usage, scores) and the raw answers as text so
-a person can read them. A provider error (rate limit, overloaded model, token limit) is recorded as an error row and is
+a person can read them. `python probe.py --rescore runs/<folder>` scores saved answers again with no model, for when the scorer is improved.
+A provider error (rate limit, overloaded model, token limit) is recorded as an error row and is
 not scored as a wrong answer.
 
 ## What the scale means (the controls, run with no model)
@@ -48,6 +51,9 @@ fails only `parses`, which is why `parses` is the first thing to read.
 
 ## Limits
 
+- The `cannot_fail` question is a judgment about what "can fail" means. A test with no assertion still fails if the
+  code crashes, so a careful model can answer CAN_FAIL and be defensible. The prompt now says a crash does not count;
+  an earlier wording did not, and one run under it scored 2 of 4 for that reason, not clearly a model error.
 - One run is one sample. Models differ run to run; repeat before comparing two models.
 - A high score on 3.6 and 3.7 shows a model can see these two constructed failures. It does not show it can see
   others. These specimens say what they are in their own text, and a model may recognise them.
