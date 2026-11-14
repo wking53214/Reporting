@@ -139,6 +139,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--task", action="append", choices=["cannot_fail", "status_claims", "reconstruct"])
     p.add_argument("--out", type=Path, default=Path("runs"))
     p.add_argument("--controls", action="store_true")
+    p.add_argument("--repeat", type=int, default=1, help="run the whole set this many times, to see run-to-run spread")
     p.add_argument("--rescore", type=Path, help="score the saved answers in a runs/ folder again, with no model")
     args = p.parse_args(argv)
     if not (args.assay / "specimens").is_dir():
@@ -152,8 +153,14 @@ def main(argv: list[str] | None = None) -> int:
     if not args.provider or not args.model:
         print("pass --provider and --model, or --controls", file=sys.stderr)
         return 2
+    for n in range(max(1, args.repeat)):
+        one_run(args, n + 1)
+    return 0
+
+
+def one_run(args: argparse.Namespace, number: int) -> None:
     stamp = time.strftime("%Y%m%dT%H%M%S")
-    folder = args.out / f"{stamp}-{args.provider}-{args.model.replace('/', '_').replace('@', '')}"
+    folder = args.out / f"{stamp}-{args.provider}-{args.model.replace('/', '_').replace('@', '')}-r{number}"
     folder.mkdir(parents=True)
     rows = []
     for job in jobs(args.assay, args.task or ["cannot_fail", "status_claims", "reconstruct"]):
@@ -173,7 +180,6 @@ def main(argv: list[str] | None = None) -> int:
         print(job["task"], job["specimen"], brief)
     (folder / "rows.jsonl").write_text("".join(json.dumps(r) + "\n" for r in rows), encoding="utf-8")
     print("rows and raw answers in", folder)
-    return 0
 
 
 if __name__ == "__main__":

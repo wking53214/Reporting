@@ -32,6 +32,7 @@ python probe.py --assay ../../ASSAY --provider groq --model openai/gpt-oss-120b
 Keys come from `GROQ_API_KEY`, `GEMINI_API_KEY`, or `CLOUDFLARE_API_TOKEN` with `CLOUDFLARE_ACCOUNT_ID`, and are never
 written. Each run makes a folder under `runs/` with `rows.jsonl` (digests, usage, scores) and the raw answers as text so
 a person can read them. `python probe.py --rescore runs/<folder>` scores saved answers again with no model, for when the scorer is improved.
+`--repeat N` runs the whole set N times, each in its own folder, to show the spread between runs.
 A provider error (rate limit, overloaded model, token limit) is recorded as an error row and is
 not scored as a wrong answer.
 
@@ -51,6 +52,10 @@ fails only `parses`, which is why `parses` is the first thing to read.
 
 ## Limits
 
+- `layout_only` measures obedience to "change nothing", not quality. The flattened vanguard source contains
+  `from __future import annotations` (the underscores were lost in the copy-paste), and ASSAY's own reconstruction
+  repairs it. A model that repairs it too fails `layout_only` while doing something sensible. Read the `changes` list
+  to tell a helpful repair from a silent change such as a reworded sentence.
 - The `cannot_fail` question is a judgment about what "can fail" means. A test with no assertion still fails if the
   code crashes, so a careful model can answer CAN_FAIL and be defensible. The prompt now says a crash does not count;
   an earlier wording did not, and one run under it scored 2 of 4 for that reason, not clearly a model error.

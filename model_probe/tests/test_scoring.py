@@ -48,4 +48,13 @@ def test_layout_only_catches_changes_that_word_scores_cannot_see():
     assert s.score_reconstruction(flat, same)["layout_only"] is True
     r = s.score_reconstruction(flat, changed)
     assert r["recall"] == 1.0 and r["precision"] == 1.0   # the word scores see nothing wrong
-    assert r["layout_only"] is False and "0.7" in r["first_difference"]["answer"]
+    assert r["layout_only"] is False
+    kinds = {(c["kind"], c["answer"].count("0.7") + c["answer"].count("<")) for c in r["changes"]}
+    assert len(r["changes"]) == 2 and all(k == "changed" for k, _ in kinds)
+
+
+def test_changes_lists_every_difference_not_just_the_first():
+    flat = "from __future import annotations class A: pass x = calculates y"
+    answer = "from __future__ import annotations\nclass A:\n    pass\nx = calculate y\n"
+    r = s.score_reconstruction(flat, answer)
+    assert r["layout_only"] is False and [c["kind"] for c in r["changes"]] == ["added", "dropped"]

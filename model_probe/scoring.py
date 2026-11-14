@@ -4,6 +4,7 @@ an answer ASSAY already records (MANIFEST.md), so a score is a fact about the an
 from __future__ import annotations
 
 import ast
+import difflib
 import json
 import re
 from collections import Counter
@@ -84,11 +85,24 @@ def score_reconstruction(source: str, answer: str) -> dict[str, Any]:
     src, out = Counter(_WORD.findall(source)), Counter(_WORD.findall(code))
     shared = sum((src & out).values())
     a, b = re.sub(r"\s+", "", source), re.sub(r"\s+", "", code)
-    at = next((i for i, (x, y) in enumerate(zip(a, b)) if x != y), None if len(a) == len(b) else min(len(a), len(b)))
-    return {"layout_only": a == b, "first_difference": None if at is None else
-            {"at": at, "source": a[max(0, at - 20):at + 40], "answer": b[max(0, at - 20):at + 40]},
+    return {"layout_only": a == b, "changes": [] if a == b else changes(a, b),
             "parses": tree is not None, "lines": code.count("\n") + 1,
             "class_cover": (len(src_classes & out_classes) / len(src_classes)) if src_classes else 1.0,
             "classes_missing": sorted(src_classes - out_classes),
             "recall": shared / max(1, sum(src.values())), "precision": shared / max(1, sum(out.values())),
             "invented": sorted((out - src).keys())[:25]}
+
+
+def changes(a: str, b: str, limit: int = 12) -> list[dict[str, Any]]:
+    """Where `b` differs from `a` (both with whitespace removed): what the source had and what the answer put instead,
+    with a few characters either side. At most `limit`, in order, plus a count of the rest."""
+    found = [(tag, i1, i2, j1, j2) for tag, i1, i2, j1, j2 in
+             difflib.SequenceMatcher(None, a, b, autojunk=False).get_opcodes() if tag != "equal"]
+    out: list[dict[str, Any]] = [
+        {"kind": {"replace": "changed", "delete": "dropped", "insert": "added"}[tag],
+         "source": a[max(0, i1 - 12):i2 + 12] if tag != "insert" else a[max(0, i1 - 12):i1 + 12],
+         "answer": b[max(0, j1 - 12):j2 + 12]}
+        for tag, i1, i2, j1, j2 in found[:limit]]
+    if len(found) > limit:
+        out.append({"kind": "more", "count": len(found) - limit})
+    return out
