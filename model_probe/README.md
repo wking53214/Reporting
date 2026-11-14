@@ -62,10 +62,9 @@ Groq gpt-oss-120b runs under the old `cannot_fail` wording and the first scorer 
 | gpt-oss-120b (Groq) | 5 of 5 | 5 of 5 | 0 of 3 | 1, 5, 15 | 3 of 3 |
 | gpt-oss-120b (Cloudflare) | 3 of 3 | 3 of 3 | 0 of 3 | 15, 1, 15 | 3 of 3 |
 | qwen3.8-27b (Groq) | 2 of 2 | 3 of 3 | 0 of 3 | 1, 1, 1 | 2 of 2 |
-| llama-3.3-70b-instruct-fp8-fast (Cloudflare) | **0 of 3** | 3 of 3 | 0 of 3 | 1, 3, 3 | 2 of 2 seen |
+| llama-3.3-70b-instruct-fp8-fast (Cloudflare) | **0 of 3** | 3 of 3 | 0 of 3 | 1, 3, 3 | 3 of 3 |
 
 Errors left out: Groq gpt-oss had four HTTP 413 refusals before the retry was added; Qwen had two HTTP 429 refusals.
-The last Llama run's sre result was cut off in the copy sent back and is not in the table.
 
 What the rows show:
 
