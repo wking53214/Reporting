@@ -63,8 +63,11 @@ Groq gpt-oss-120b runs under the old `cannot_fail` wording and the first scorer 
 | gpt-oss-120b (Cloudflare) | 3 of 3 | 3 of 3 | 0 of 3 | 15, 1, 15 | 3 of 3 |
 | qwen3.8-27b (Groq) | 2 of 2 | 3 of 3 | 0 of 3 | 1, 1, 1 | 2 of 2 |
 | llama-3.3-70b-instruct-fp8-fast (Cloudflare) | **0 of 3** | 3 of 3 | 0 of 3 | 1, 3, 3 | 3 of 3 |
+| gemini-3.1-flash-lite (Google) | 3 of 3 | 3 of 3 | 0 of 3 | 1, 1, 1 | 3 of 3 |
 
 Errors left out: Groq gpt-oss had four HTTP 413 refusals before the retry was added; Qwen had two HTTP 429 refusals.
+Gemini's larger flash models (3.8, 3.7, 3.5) could not be run: Google returned HTTP 503 or timed out. Only the small
+`gemini-3.1-flash-lite` answered, so that row is one small model, not Gemini in general.
 
 What the rows show:
 
@@ -74,13 +77,13 @@ What the rows show:
   error, not noise. The other three models never made it.
 - **No model returned vanguard unchanged in layout.** All of them repaired `from __future import annotations`, which
   is damaged in the source and which ASSAY's own reconstruction also repairs. Beyond that they split:
-  Qwen added nothing else in three runs. Llama sometimes put quotes around one type name (3 changes).
+  Qwen and Gemini's small model added nothing else in three runs each. Llama sometimes put quotes around one type name (3 changes).
   gpt-oss either stopped at the repair (1 change) or reformatted fully, adding parentheses, trailing commas and
   quotes (15 changes), and did so on both hosts.
 - **The 15-change list was the same on both hosts.** The first twelve changes listed were identical in three separate
   gpt-oss runs, one on Groq and two on Cloudflare. The three beyond the listing cap were not read. This points at the
   model, not the host, with three runs as the evidence.
-- **sre came back with layout changed only in every run that returned it**, apart from one early Groq run that
+- **sre came back with layout changed only in every run that returned it, in all five rows**, apart from one early Groq run that
   reworded a sentence ("calculates" to "calculate"; that run is among the uncounted early ones).
 - **The word scores read 1.00 throughout**, including runs with 15 changed characters. `layout_only` is what showed them.
 
