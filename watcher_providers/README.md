@@ -17,9 +17,10 @@ deterministic template (`--no-model`) says both. The question was whether a mode
 | Groq | qwen/qwen3.8-27b | after fix | yes, all seven, and said again that declined means not run | none seen | long account, some repetition |
 | Cloudflare | @cf/openai/gpt-oss-120b | after fix | yes, all seven, one sentence each | none seen | one bold section label dropped by the oath |
 | Cloudflare | @cf/meta/llama-3.3-70b-instruct-fp8-fast | after fix | yes, all seven, and wrote "does not mean that nothing was skipped" | none seen | |
-| Gemini | gemini-3.8-flash, gemini-3.7-flash | after fix | **not tested**: Google returned HTTP 503 ("high demand") on every attempt | | |
+| Gemini | gemini-3.1-flash-lite | after fix (merged, PR 14) | yes, all seven, in one sentence | none seen | only the lines matching the search were read |
+| Gemini | gemini-3.8-flash, gemini-3.7-flash, gemini-3.5-flash | after fix | **no account**: HTTP 503 ("high demand") on 3.8 and 3.7 in repeated attempts, and a request timeout on 3.5 | | |
 
-"After fix" is the narrator prompt change in PR 14: name every declined check whenever the scan or the unmeasured list
+"After fix" is the narrator prompt change in PR 14 (merged 2026-11-14; the Groq and Cloudflare runs above used the same commit before it merged): name every declined check whenever the scan or the unmeasured list
 is mentioned, and add no verdict word to a result.
 
 ## What this shows
@@ -39,7 +40,8 @@ is mentioned, and add no verdict word to a result.
 - Only the lines matching `declined|not run|omitted|confirming` were read for the Cloudflare and Qwen runs, so the rest
   of those accounts has not been reviewed. The full accounts were not saved to this repository.
 - One fixture, one run per model. No repeat runs.
-- Gemini produced no account at all.
+- Gemini produced an account from one model only (`gemini-3.1-flash-lite`), later the same day, after repeated failures; the
+  three newer flash models were overloaded or timed out. One run of one model, and only the matching lines were read.
 - Model ids used were the ones each provider listed on the day. Several providers retired older models recently, so
   these ids will age.
 - The write-up of a model's accuracy on code is a separate harness: see `../model_probe/`.
