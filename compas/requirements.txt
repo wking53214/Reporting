@@ -1,5 +1,6 @@
 # The pipeline the example runs, pinned to the commits it was tested against
-# (the code in these repos is unchanged since; later commits there are README-only).
+# (the code in these repos has changed since; the example printed the same report at these pins and at the
+# latest versions when checked on 2026-11-18).
 #
 # Install with --no-deps. delta and beta each declare zeta/beta as unpinned git
 # dependencies, which pip cannot reconcile with the pins below; the three
